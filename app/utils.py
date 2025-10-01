@@ -69,14 +69,20 @@ def extract_text_chunks(
                 if part_type == "thinking":
                     # Accumulate thinking content in buffer
                     thinking_buffer.append(part.get("thinking", ""))
-                elif part_type == "tool_use":
-                    # Flush thinking before tool use
-                    flush_thinking()
                 elif part_type == "text":
                     # Flush thinking before displaying text
                     flush_thinking()
                     if text := part.get("text"):
                         yield text
+                elif "delta" in part_type:
+                    # Skip delta types (streaming intermediate states)
+                    continue
+                else:
+                    # Other types (tool_use, server_tool_use, web_search_tool_result, etc.)
+                    flush_thinking()
+                    if tool_callback:
+                        title = part.get("name", part_type) if "name" in part else part_type
+                        tool_callback(f"🔧 {title}", part)
 
         # OpenAI: content is a simple string
         elif isinstance(content, str):
@@ -158,11 +164,12 @@ def on_delete_thread(thread_id: str) -> None:
 
 # Message display functions
 def render_part(part: Any) -> None:
-    """Display a single part of multimodal message content (text or image)."""
+    """Display a single part of multimodal message content (text, image, tool use, etc.)."""
     if not isinstance(part, dict):
         return
 
     part_type = part.get("type")
+
     if part_type == "text":
         st.write(part.get("text", ""))
     elif part_type == "image_url":
@@ -170,6 +177,15 @@ def render_part(part: Any) -> None:
         url = url_part.get("url") if isinstance(url_part, dict) else url_part
         if url:
             st.image(url)
+    elif part_type == "thinking":
+        # Thinking blocks are handled separately in show_message
+        pass
+    else:
+        # All other types (server_tool_use, web_search_tool_result, etc.)
+        # Display generically in expander
+        title = part.get("name", part_type) if "name" in part else part_type
+        with st.expander(f"🔧 {title}", expanded=False):
+            st.write(part)
 
 
 def render_content(content: str | list[Any]) -> None:
