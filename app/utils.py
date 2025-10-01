@@ -66,6 +66,9 @@ def extract_text_chunks(
 
                 part_type = part.get("type")
 
+                if not part_type:
+                    continue
+
                 if part_type == "thinking":
                     # Accumulate thinking content in buffer
                     thinking_buffer.append(part.get("thinking", ""))
