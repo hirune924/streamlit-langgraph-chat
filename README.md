@@ -15,10 +15,12 @@ A reference implementation for building chat applications with LangGraph and Str
 - **Multimodal Support**: Image input handling for compatible models
 - **Extensible Agent System**: Abstract base class (`AgentConfig`) makes it straightforward to add custom agents with their own configuration UI
 
-## Supported Providers
+## Implemented Providers
 
 - **OpenAI**: GPT-4o, GPT-4 Turbo, o1, o3-mini
 - **Anthropic**: Claude Sonnet 4, Claude 3.7 Sonnet, Claude 3.5 Sonnet/Haiku
+
+Additional providers can be easily added by implementing the `AgentConfig` interface (see [Adding Custom Agents](#adding-custom-agents)).
 
 ## Quick Start
 

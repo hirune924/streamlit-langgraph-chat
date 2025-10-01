@@ -20,15 +20,31 @@ def extract_text_chunks(
     message_stream: Iterator[Any],
     tool_callback: Callable[[str, Any], None] | None = None
 ) -> Iterator[str]:
-    """Extract text chunks from a stream, handling tool and thinking messages separately."""
+    """Extract text chunks from a stream, handling tool and thinking messages separately.
+
+    This function processes streaming responses from LLM agents and separates:
+    - Text content: Yielded for display
+    - Thinking blocks: Buffered and sent via callback
+    - Tool calls: Sent via callback immediately
+
+    Args:
+        message_stream: Stream of message events from the agent
+        tool_callback: Optional callback for tool/thinking messages
+
+    Yields:
+        Text chunks to be displayed to the user
+    """
+    # Buffer for accumulating thinking content before displaying
     thinking_buffer: list[str] = []
 
     def flush_thinking() -> None:
+        """Send buffered thinking content via callback and clear buffer."""
         if thinking_buffer and tool_callback:
             tool_callback("💭 Thinking", "".join(thinking_buffer))
             thinking_buffer.clear()
 
     for event in message_stream:
+        # Unwrap event tuple if needed
         chunk = event[0] if isinstance(event, tuple) else event
         msg_type = getattr(chunk, "type", None)
 
@@ -42,7 +58,7 @@ def extract_text_chunks(
 
         content = getattr(chunk, "content", None)
 
-        # Anthropic: content is list of parts
+        # Anthropic: content is a list of parts (multimodal/thinking/text)
         if isinstance(content, list):
             for part in content:
                 if not isinstance(part, dict):
@@ -51,19 +67,23 @@ def extract_text_chunks(
                 part_type = part.get("type")
 
                 if part_type == "thinking":
+                    # Accumulate thinking content in buffer
                     thinking_buffer.append(part.get("thinking", ""))
                 elif part_type == "tool_use":
+                    # Flush thinking before tool use
                     flush_thinking()
                 elif part_type == "text":
+                    # Flush thinking before displaying text
                     flush_thinking()
                     if text := part.get("text"):
                         yield text
 
-        # OpenAI: content is string
+        # OpenAI: content is a simple string
         elif isinstance(content, str):
             flush_thinking()
             yield content
 
+    # Flush any remaining thinking content at the end
     flush_thinking()
 
 
@@ -143,14 +163,29 @@ def render_content(content: str | list[Any]) -> None:
 
 
 def convert_input_to_content(user_text: str, user_files: list[Any]) -> str | list[dict[str, Any]]:
-    """Convert Streamlit chat input to LangChain message content format."""
+    """Convert Streamlit chat input to LangChain message content format.
+
+    Handles both text-only and multimodal (text + images) inputs.
+    - Text only: Returns simple string
+    - Text + images: Returns list of content parts with base64-encoded images
+
+    Args:
+        user_text: User's text input
+        user_files: List of uploaded files from Streamlit
+
+    Returns:
+        String for text-only, or list of content parts for multimodal input
+    """
+    # Text-only input: return as simple string
     if not user_files:
         return user_text.strip() if isinstance(user_text, str) else ""
 
+    # Multimodal input: build list of content parts
     parts: list[dict[str, Any]] = []
     if isinstance(user_text, str) and user_text.strip():
         parts.append({"type": "text", "text": user_text.strip()})
 
+    # Convert uploaded images to base64 data URLs
     for f in user_files:
         mime_type = getattr(f, 'type', None) or 'image/png'
         encoded = base64.b64encode(f.getvalue()).decode('utf-8')

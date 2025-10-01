@@ -20,20 +20,24 @@ load_dotenv()
 
 
 def main():
+    """Main Streamlit application for LangGraph Agent Chat."""
     st.title("LangGraph Agent Chat")
     initialize_checkpoint()
 
+    # === Sidebar: Conversation and Agent Management ===
     with st.sidebar:
         st.header("💬 Conversations")
 
-        # Thread management
+        # Thread management: Get existing threads and determine current thread
         threads, latest = get_threads(st.session_state.checkpoint)
         current = st.session_state.get('thread_id') or latest or str(uuid.uuid4())
         st.session_state.thread_id = current
 
+        # Ensure current thread appears in the list
         if current not in threads:
             threads.insert(0, current)
 
+        # Thread selection dropdown
         st.selectbox(
             "Select thread",
             threads,
@@ -45,6 +49,7 @@ def main():
         st.button("New chat", on_click=lambda: setattr(st.session_state, 'thread_id', str(uuid.uuid4())))
         st.button("Delete current chat", on_click=on_delete_thread, args=(st.session_state.thread_id,))
 
+        # Streaming toggle
         use_streaming = st.checkbox(
             "Enable Streaming",
             value=True,
@@ -55,7 +60,7 @@ def main():
         st.divider()
         st.header("⚙️ Agent Settings")
 
-        # Agent selection
+        # Agent selection: Display available agents
         agent_names = [agent.get_name() for agent in AVAILABLE_AGENTS]
         if not agent_names:
             st.warning("No agents configured. Please add agents to AVAILABLE_AGENTS.")
@@ -73,10 +78,11 @@ def main():
             st.warning("No agents configured. Please add agents to AVAILABLE_AGENTS.")
             st.stop()
 
+        # Render agent-specific configuration UI
         st.subheader("Agent Options")
         options = selected_agent_config.render_options()
 
-        # Rebuild agent if needed
+        # Rebuild agent if configuration changed
         prev_name = st.session_state.get("current_agent_name")
         needs_rebuild = (
             prev_name != selected_name or
@@ -90,16 +96,20 @@ def main():
                 st.session_state.current_agent_name = selected_name
                 st.session_state.agent_options = options
 
+    # === Main Area: Chat Interface ===
+    # Chat input with multimodal support (text + images)
     submission = st.chat_input(
         "Ask me anything!",
         accept_file=True,
         file_type=["jpg", "jpeg", "png"],
     )
 
+    # Display conversation history
     display_chat_history(st.session_state.checkpoint, st.session_state.thread_id)
 
+    # Handle new user input
     if submission:
-        # Parse submission
+        # Parse submission (handles both dict and object formats)
         if isinstance(submission, dict):
             user_text = submission.get("text", "")
             user_files = submission.get("files", [])
@@ -107,24 +117,27 @@ def main():
             user_text = getattr(submission, "text", submission if isinstance(submission, str) else "")
             user_files = getattr(submission, "files", [])
 
+        # Convert to LangChain message format
         content = convert_input_to_content(user_text, user_files)
 
         # Display user message
         with st.chat_message("user"):
             render_content(content)
 
-        # Assistant response
+        # Generate and display assistant response
         use_streaming = st.session_state.get("use_streaming", True)
 
         with st.chat_message("assistant"):
             if use_streaming:
-                # Stream response with fixed order: thinking → tools → text
+                # Streaming mode: Display thinking, tools, and text in separate containers
+                # This ensures proper ordering even when messages arrive out of order
                 thinking_container = st.container()
                 tools_container = st.container()
                 text_container = st.container()
                 text_buffer = []
 
                 def render_to_container(title, payload):
+                    """Route thinking/tool messages to appropriate containers."""
                     target = thinking_container if "Thinking" in title else tools_container
                     with target:
                         render_tool(title, payload)
@@ -132,23 +145,26 @@ def main():
                 with text_container:
                     text_element = st.empty()
 
+                # Stream agent response
                 stream = st.session_state.agent.stream(
                     {"messages": [HumanMessage(content=content)]},  # type: ignore[arg-type]
                     config={"configurable": {"thread_id": st.session_state.thread_id}},
                     stream_mode="messages",
                 )
 
+                # Process stream and display text chunks incrementally
                 for text_chunk in extract_text_chunks(stream, tool_callback=render_to_container):
                     text_buffer.append(text_chunk)
                     text_element.markdown("".join(text_buffer))
             else:
-                # Invoke (non-streaming)
+                # Non-streaming mode: Invoke agent and wait for complete response
                 with st.spinner("Processing..."):
                     st.session_state.agent.invoke(
                         {"messages": [HumanMessage(content=content)]},  # type: ignore[arg-type]
                         config={"configurable": {"thread_id": st.session_state.thread_id}},
                     )
 
+        # Rerun to display the new message from history
         st.rerun()
 
 
