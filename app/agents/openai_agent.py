@@ -26,12 +26,12 @@ class OpenAIAgentConfig(AgentConfig):
         options["model"] = st.selectbox(
             "Model",
             [
+                "gpt-5",
                 "gpt-4o",
                 "gpt-4o-mini",
                 "gpt-4-turbo",
                 "gpt-4",
                 "o1",
-                "o1-mini",
                 "o3-mini",
             ],
             index=0,
@@ -40,7 +40,7 @@ class OpenAIAgentConfig(AgentConfig):
         )
 
         # o1/o3 models don't support temperature parameter
-        is_thinking_model = options["model"] in ["o1", "o1-mini", "o3-mini"]
+        is_thinking_model = options["model"] in ["o1", "o3-mini"]
 
         if not is_thinking_model:
             options["temperature"] = st.slider(

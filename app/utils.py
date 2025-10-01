@@ -106,29 +106,48 @@ def get_threads(checkpoint: SqliteSaver) -> tuple[list[str], str | None]:
 
 
 def get_thread_title(thread_id: str) -> str:
-    """Get the title for a thread based on its first message."""
+    """Get the title for a thread based on its first message.
+
+    Includes thread_id prefix to ensure uniqueness in the UI.
+    """
     tup = st.session_state.checkpoint.get_tuple({"configurable": {"thread_id": thread_id}})
     if not tup:
-        return "New thread"
+        return f"[{thread_id[:8]}] New thread"
 
     messages = getattr(tup, "checkpoint", {}).get("channel_values", {}).get("messages", [])
     if not messages:
-        return "New thread"
+        return f"[{thread_id[:8]}] New thread"
 
     content = getattr(messages[0], "content", None)
+    title = None
+    has_image = False
 
     # String content
     if isinstance(content, str) and content.strip():
-        return content.strip().splitlines()[0]
+        title = content.strip().splitlines()[0]
 
     # List content (multimodal)
-    if isinstance(content, list):
+    elif isinstance(content, list):
         for part in content:
-            if isinstance(part, dict) and part.get("type") == "text":
-                if text := part.get("text", "").strip():
-                    return text.splitlines()[0]
+            if not isinstance(part, dict):
+                continue
 
-    return "New thread"
+            part_type = part.get("type")
+            if part_type == "text":
+                if text := part.get("text", "").strip():
+                    title = text.splitlines()[0]
+                    break
+            elif part_type == "image_url":
+                has_image = True
+
+    if title:
+        return f"[{thread_id[:8]}] {title}"
+
+    # Image-only message
+    if has_image:
+        return f"[{thread_id[:8]}] 📸 Image"
+
+    return f"[{thread_id[:8]}] New thread"
 
 
 def on_delete_thread(thread_id: str) -> None:

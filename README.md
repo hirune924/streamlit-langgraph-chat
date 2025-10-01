@@ -17,7 +17,7 @@ A reference implementation for building chat applications with LangGraph and Str
 
 ## Implemented Providers
 
-- **OpenAI**: GPT-4o, GPT-4 Turbo, o1, o3-mini
+- **OpenAI**: GPT-5, GPT-4o, GPT-4o-mini, GPT-4 Turbo, GPT-4, o1, o3-mini
 - **Anthropic**: Claude Sonnet 4, Claude 3.7 Sonnet, Claude 3.5 Sonnet/Haiku
 
 Additional providers can be easily added by implementing the `AgentConfig` interface (see [Adding Custom Agents](#adding-custom-agents)).
