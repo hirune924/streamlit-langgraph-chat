@@ -1,0 +1,58 @@
+[project]
+name = "streamlit-langgraph-chat"
+version = "0.1.0"
+description = "Extensible reference implementation for Streamlit + LangGraph chat applications"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+    { name = "hirune924", email = "hirune924@gmail.com" }
+]
+keywords = ["streamlit", "langgraph", "langchain", "chat", "llm", "ai", "conversational-ai"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "ddgs>=9.6.0",
+    "dotenv>=0.9.9",
+    "duckduckgo-search>=8.1.1",
+    "langchain-anthropic>=1.0.0a1",
+    "langchain-community>=0.3.30",
+    "langchain-openai>=1.0.0a2",
+    "langchain>=1.0.0a9",
+    "langgraph-checkpoint-sqlite>=2.0.11",
+    "langgraph>=1.0.0a3",
+    "streamlit>=1.50.0",
+]
+
+[project.urls]
+Repository = "https://github.com/hirune924/streamlit-langgraph-chat"
+Issues = "https://github.com/hirune924/streamlit-langgraph-chat/issues"
+
+[tool.uv]
+prerelease = "allow"
+dev-dependencies = [
+    "pyright>=1.1.405",
+    "ruff>=0.13.2",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+]
+ignore = []
+
+[tool.pyright]
+include = ["app"]
+typeCheckingMode = "basic"
+reportMissingTypeStubs = false
