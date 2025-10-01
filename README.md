@@ -98,7 +98,7 @@ class OpenAIAgentConfig(AgentConfig):
         options = {}
         options["model"] = st.selectbox(
             "Model",
-            ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4", "o1", "o1-mini", "o3-mini"],
+            ["gpt-5", "gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4", "o1", "o3-mini"],
             index=0,
             key="openai_model",
             help="Select the OpenAI model to use"
