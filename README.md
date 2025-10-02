@@ -1,6 +1,7 @@
 # Streamlit LangGraph Chat
 
 [![CI](https://github.com/hirune924/streamlit-langgraph-chat/actions/workflows/ci.yml/badge.svg)](https://github.com/hirune924/streamlit-langgraph-chat/actions/workflows/ci.yml)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://st-langgraph-chat.streamlit.app/)
 
 **Extensible Reference Implementation for Streamlit + LangGraph Chat Applications**
 
